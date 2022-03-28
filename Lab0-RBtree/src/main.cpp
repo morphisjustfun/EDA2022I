@@ -15,9 +15,9 @@ int main() {
     testRBT->insert(4);
     testRBT->insert(2);
 
-    auto inOrderList = testRBT->inorder();
-    auto preOrderList = testRBT->preorder();
-    auto postOrderList = testRBT->postorder();
+    auto inOrderList = testRBT->inorden();
+    auto preOrderList = testRBT->preorden();
+    auto postOrderList = testRBT->posorden();
 
     std::cout << "Inorder: ";
     for (auto i: inOrderList) {
@@ -34,28 +34,28 @@ int main() {
         std::cout << i << " ";
     }
 
-    std::cout << std::endl << std::endl << "After remove: " << std::endl << std::endl;
+    std::cout << std::endl << std::endl << "After eliminarNodo: " << std::endl << std::endl;
 
-    testRBT->remove(5);
-    testRBT->remove(3);
-    testRBT->remove(9);
-    testRBT->remove(1);
-    testRBT->remove(7);
+    testRBT->eliminarNodo(5);
+    testRBT->eliminarNodo(3);
+    testRBT->eliminarNodo(9);
+    testRBT->eliminarNodo(1);
+    testRBT->eliminarNodo(7);
 
-    inOrderList = testRBT->inorder();
+    inOrderList = testRBT->inorden();
     std::cout << "Inorder: ";
     for (auto i: inOrderList) {
         std::cout << i << " ";
     }
     std::cout << std::endl;
     std::cout << "Preorder: ";
-    preOrderList = testRBT->preorder();
+    preOrderList = testRBT->preorden();
     for (auto i: preOrderList) {
         std::cout << i << " ";
     }
     std::cout << std::endl;
     std::cout << "Postorder: ";
-    postOrderList = testRBT->postorder();
+    postOrderList = testRBT->posorden();
     for (auto i: postOrderList) {
         std::cout << i << " ";
     }

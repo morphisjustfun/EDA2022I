@@ -47,13 +47,13 @@ private:
 public:
     RBTree();
 
-    std::vector<int> inorder();
+    std::vector<int> inorden();
 
-    std::vector<int> preorder();
+    std::vector<int> preorden();
 
-    std::vector<int> postorder();
+    std::vector<int> posorden();
 
-    void remove(int value);
+    void eliminarNodo(int value);
 
     void insert(int value);
 

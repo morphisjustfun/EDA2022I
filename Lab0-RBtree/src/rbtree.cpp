@@ -179,7 +179,7 @@ void RBTree::inorderUtil(Node *&node, std::vector<int> &vec) {
     inorderUtil(node->right, vec);
 }
 
-std::vector<int> RBTree::inorder() {
+std::vector<int> RBTree::inorden() {
     std::vector<int> vec;
     inorderUtil(root, vec);
     return vec;
@@ -192,7 +192,7 @@ void RBTree::preorderUtil(Node *&node, std::vector<int> &vec) {
     preorderUtil(node->right, vec);
 }
 
-std::vector<int> RBTree::preorder() {
+std::vector<int> RBTree::preorden() {
     std::vector<int> vec;
     preorderUtil(root, vec);
     return vec;
@@ -205,7 +205,7 @@ void RBTree::postorderUtil(Node *&node, std::vector<int> &vec) {
     vec.push_back(node->value);
 }
 
-std::vector<int> RBTree::postorder() {
+std::vector<int> RBTree::posorden() {
     std::vector<int> vec;
     postorderUtil(root, vec);
     return vec;
@@ -235,7 +235,7 @@ Node *RBTree::findSucesor(Node *&node) {
 
 
 Node *RBTree::removeUtil(Node *&origin, int value) {
-    // classic BST remove but it returns the node that replaces the deleted one
+    // classic BST eliminarNodo but it returns the node that replaces the deleted one
     if (origin == nullptr) return nullptr;
 
     if (value > origin->value) {
@@ -255,7 +255,7 @@ Node *RBTree::removeUtil(Node *&origin, int value) {
     return removeUtil(origin->right, sucesor->value);
 }
 
-void RBTree::remove(int value) {
+void RBTree::eliminarNodo(int value) {
     Node *nodeToBeRemoved = removeUtil(root, value);
 
     if (nodeToBeRemoved == nullptr) return;
@@ -378,6 +378,7 @@ void RBTree::remove(int value) {
             }
 
         } else {
+            // the same as above but for the other direction
             sibling = parent->left;
             if (getColor(sibling) == BLACK) {
                 if (getColor(sibling->left) == RED || getColor(sibling->right) == RED) {
