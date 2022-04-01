@@ -1,2 +1,5 @@
 cmake-build-debug/
 .idea/
+*.gch
+.DS_Store
+a.out
