@@ -18,7 +18,7 @@ void test() {
     }
 
     int64_t tiempoInseccion = 0;
-    for (int t = 0; t < 10; ++t) {
+    for (int t = 0; t < 1; ++t) {
         auto tree = new BplusTree();
 
         std::chrono::steady_clock::time_point begin =
@@ -46,21 +46,6 @@ void test() {
 }
 
 int main() {
-//    test();
-    auto tree = new BplusTree();
-    tree->insertar(1);
-    tree->insertar(2);
-    tree->insertar(3);
-    tree->insertar(4);
-    tree->insertar(5);
-    tree->insertar(6);
-    tree->insertar(7);
-    tree->insertar(8);
-    tree->insertar(9);
-    tree->insertar(10);
-    auto bfs = tree->BFS();
-    for (auto i: bfs) {
-        std::cout << i << " ";
-    }
+    test();
     return 0;
 }

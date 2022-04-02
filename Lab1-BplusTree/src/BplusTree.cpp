@@ -1,18 +1,5 @@
 #include "BplusTree.h"
 
-void sortArray(int array[ORDER + 1], int size) {
-    int i, j, temp;
-    for (i = 0; i < size; i++) {
-        for (j = 0; j < size - 1; j++) {
-            if (array[j] > array[j + 1]) {
-                temp = array[j];
-                array[j] = array[j + 1];
-                array[j + 1] = temp;
-            }
-        }
-    }
-}
-
 Node::Node(int size) {
     this->size = size;
 }
@@ -29,8 +16,9 @@ BplusTree::~BplusTree() {
     std::vector<Node *> result;
     std::queue<Node *> q;
     q.push(root);
+    result.push_back(root);
     while (!q.empty()) {
-        const Node *current = q.front();
+        Node *current = q.front();
         q.pop();
         if (!current->leaf) {
             for (int i = 0; i < current->size + 1; ++i) {
@@ -44,6 +32,7 @@ BplusTree::~BplusTree() {
 
     for (int i = 0; i < result.size(); ++i) {
         delete result[i];
+        result[i] = nullptr;
     }
 }
 
@@ -98,11 +87,11 @@ void BplusTree::insertar(int value) {
         // the child of the last element of a leaft node is the next node (from the
         // leaf_node linked list) when inserting a new value then we have to assign
         // to the node just inserted the next node (from the leaf_node linked list)
-        tempPointer->children[tempPointer->size + 1] =
-                tempPointer->children[tempPointer->size];
+        tempPointer->children[tempPointer->size] =
+                tempPointer->children[tempPointer->size - 1];
 
         // and remove the previous one
-        tempPointer->children[tempPointer->size] = nullptr;
+        tempPointer->children[tempPointer->size - 1] = nullptr;
 
         // finally, add 1 to the size
         tempPointer->size++;
@@ -118,20 +107,37 @@ void BplusTree::insertar(int value) {
     int fakeArray[ORDER + 1];
     // then we will insert everything plus the new value
 
-    for (int i = 0; i < ORDER + 1; i++) {
-        if (i < ORDER)
-            fakeArray[i] = tempPointer->keys[i];
-        else
-            fakeArray[i] = value;
+    for (int i = 0; i < ORDER; i++) {
+        fakeArray[i] = tempPointer->keys[i];
     }
 
+    int correctIndex = 0;
+
     // sort the array
-    sortArray(fakeArray, ORDER + 1);
+    while (value > fakeArray[correctIndex] && correctIndex < ORDER)
+        correctIndex++;
+
+    // shift
+    for (int actualIndex = ORDER; actualIndex > correctIndex; actualIndex--)
+        fakeArray[actualIndex] = fakeArray[actualIndex - 1];
+
+    // insert the value
+    fakeArray[correctIndex] = value;
 
     // the nodes will be splited in half
     tempPointer->size = (ORDER + 1) / 2;
+
+    // the node that is being splited will have as child the new leaf
+    tempPointer->children[tempPointer->size] = newLeaf;
+    // the new leaf will have as last child the next node in the liked_list which
+    // is the previous children[ORDER
+    // ] of the node that is being splited
+    newLeaf->children[newLeaf->size] = tempPointer->children[ORDER];
+    // the node that is being splited will have nullptr as last child (no
+    // linked_list)
+    tempPointer->children[ORDER] = nullptr;
+
     // the new leaf will have the value that is not in the node
-    newLeaf->size = (ORDER + 1) / 2;
 
     // as the bptree is right biased we will insert at the left elements that are
     // strictly smaller than the new value
@@ -145,16 +151,8 @@ void BplusTree::insertar(int value) {
         newLeaf->keys[indexTempPointer - tempPointer->size] =
                 fakeArray[indexTempPointer];
     }
+    newLeaf->size = ORDER + 1 - tempPointer->size;
 
-    // the node that is being splited will have as child the new leaf
-    tempPointer->children[tempPointer->size] = newLeaf;
-    // the new leaf will have as last child the next node in the liked_list which
-    // is the previous children[ORDER
-    // ] of the node that is being splited
-    newLeaf->children[newLeaf->size] = tempPointer->children[ORDER];
-    // the node that is being splited will have nullptr as last child (no
-    // linked_list)
-    tempPointer->children[ORDER] = nullptr;
 
     // if the tempNode is the root
     if (tempPointer == root) {
@@ -167,7 +165,6 @@ void BplusTree::insertar(int value) {
         newRoot->children[1] = newLeaf;
 
         newRoot->keys[0] = newLeaf->keys[0];
-
         root = newRoot;
         return;
     }
@@ -253,23 +250,26 @@ void BplusTree::insertIntoInternalNode(Node *parentNode, Node *tempNode,
 
     newInternalNode->leaf = false;
     parentNode->size = (ORDER + 1) / 2;
-    newInternalNode->size = ORDER - parentNode->size;
 
-    for (int i = 0; i < parentNode->size; i++) {
+    for (int i = 0; i < ORDER - parentNode->size; i++) {
         parentNode->keys[i] = fakeKeys[i];
     }
-    for (int i = 0; i < parentNode->size + 1; i++) {
+    for (int i = 0; i < ORDER - parentNode->size + 1; i++) {
         parentNode->children[i] = fakeChildren[i];
     }
 
+    newInternalNode->size = parentNode->size;
 
-    for (int index = 0; index < newInternalNode->size + 1; index++) {
-        if (index < newInternalNode->size) {
+
+    for (int index = 0; index < ORDER - newInternalNode->size + 1; index++) {
+        if (index < ORDER - newInternalNode->size) {
             newInternalNode->keys[index] = fakeKeys[index + parentNode->size + 1];
         }
         newInternalNode->children[index] =
                 fakeChildren[index + parentNode->size + 1];
     }
+
+    newInternalNode->size = ORDER - parentNode->size;
 
     // if parent node is root
     if (parentNode == root) {
@@ -296,7 +296,7 @@ void BplusTree::insertIntoInternalNode(Node *parentNode, Node *tempNode,
 }
 
 Node *BplusTree::findParent(Node *refNode, Node *node) {
-    Node *parentResult;
+    Node *parentResult = nullptr;
 
     // if the reference node reached the leaf node
     if (refNode->leaf || (refNode->children[0])->leaf) {
@@ -309,13 +309,13 @@ Node *BplusTree::findParent(Node *refNode, Node *node) {
 
         // if refNode has a child which is the node
         if (refNode->children[index] == node) {
-            return refNode;
+            parentResult = refNode;
+            return parentResult;
         }
 
         // if refNode has a child which is not the node
         // recursively call the function
         parentResult = findParent(refNode->children[index], node);
-
         // If parent is found, then return
         if (parentResult != nullptr)
             return parentResult;

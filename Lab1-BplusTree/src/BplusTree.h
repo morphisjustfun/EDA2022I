@@ -3,8 +3,8 @@
 #include <queue>
 #include <vector>
 // #define ORDER 21
-//#define ORDER 20
-#define ORDER 3
+#define ORDER 20
+//#define ORDER 3
 
 void sortArray(int *&array, int size);
 
