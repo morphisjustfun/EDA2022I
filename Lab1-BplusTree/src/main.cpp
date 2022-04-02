@@ -6,10 +6,15 @@
 void test() {
     // Read file
     std::ifstream texto;
-    texto.open("../output.txt");
+    texto.open("./output.txt");
 
     int datos[1000000];
     int element;
+
+    if (!texto.is_open()) {
+        std::cout << "No se pudo abrir el archivo output.txt, pruebe desde otra ruta (./output.txt)" << std::endl;
+        return;
+    }
     if (texto.is_open()) {
         int i = 0;
         while (texto >> element) {
@@ -18,7 +23,7 @@ void test() {
     }
 
     int64_t tiempoInseccion = 0;
-    for (int t = 0; t < 1; ++t) {
+    for (int t = 0; t < 10; ++t) {
         auto tree = new BplusTree();
 
         std::chrono::steady_clock::time_point begin =
@@ -34,11 +39,6 @@ void test() {
                 std::chrono::duration_cast<std::chrono::microseconds>(end - begin)
                         .count();
         tiempoInseccion += tiempo;
-
-        auto bfs = tree->BFS();
-        for (auto i: bfs) {
-            std::cout << i << std::endl;
-        }
         delete tree;
     }
 

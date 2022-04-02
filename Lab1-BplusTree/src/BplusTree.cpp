@@ -5,35 +5,18 @@ Node::Node(int size) {
 }
 
 Node::~Node() {
+    if (leaf) {
+        return;
+    }
+    for (int i = 0; i < size; i++) {
+        delete children[i];
+    }
 }
 
 BplusTree::BplusTree() { root = nullptr; }
 
 BplusTree::~BplusTree() {
-    if (root == nullptr) {
-        return;
-    }
-    std::vector<Node *> result;
-    std::queue<Node *> q;
-    q.push(root);
-    result.push_back(root);
-    while (!q.empty()) {
-        Node *current = q.front();
-        q.pop();
-        if (!current->leaf) {
-            for (int i = 0; i < current->size + 1; ++i) {
-                if (current->children[i] != nullptr) {
-                    q.push(current->children[i]);
-                }
-            }
-        }
-        result.push_back(const_cast<Node *>(current));
-    }
-
-    for (int i = 0; i < result.size(); ++i) {
-        delete result[i];
-        result[i] = nullptr;
-    }
+    delete root;
 }
 
 void BplusTree::insertar(int value) {
