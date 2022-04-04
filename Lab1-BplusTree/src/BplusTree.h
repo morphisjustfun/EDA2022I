@@ -2,19 +2,24 @@
 #include <iostream>
 #include <queue>
 #include <vector>
-#define ORDER 20
+#include <cmath>
+//#define ORDER 20
+
+// ORDER = MAX_KEYS = (REAL ORDER) - 1
+#define ORDER 4
+
 
 // BP node
 struct Node {
-    bool leaf;
+    bool leaf{};
     // keys
-    int keys[ORDER];
+    int keys[ORDER]{};
     // size
     int size;
     // children
-    Node *children[ORDER + 1];
+    Node *children[ORDER + 1]{};
 
-    Node(int size = 1);
+    explicit Node(int size = 1);
 
     ~Node();
 };
@@ -24,13 +29,15 @@ class BplusTree {
     Node *findParent(Node *cursor, Node *child);
 
     void insertIntoInternalNode(Node *parentNode, Node *tempNode, int key);
+    void removeFromInternalNode(Node *parentNode, Node *tempNode, int key);
 
 public:
     Node *root;
 
     BplusTree();
 
-    void insertar(int x);
+    void insert(int value);
+    void remove(int value);
 
     std::vector<int> BFS();
 

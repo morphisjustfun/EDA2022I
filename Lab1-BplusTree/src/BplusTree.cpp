@@ -19,7 +19,7 @@ BplusTree::~BplusTree() {
     delete root;
 }
 
-void BplusTree::insertar(int value) {
+void BplusTree::insert(int value) {
     if (root == nullptr) {
         root = new Node();
         root->keys[0] = value;
@@ -329,4 +329,311 @@ std::vector<int> BplusTree::BFS() {
         q.pop();
     }
     return result;
+}
+
+void BplusTree::remove(int value) {
+    if (root == nullptr) {
+        return;
+    }
+
+    Node *tempPointer = root;
+    Node *parentTempPointer = nullptr;
+
+    int indexLeftSibling = -1;
+    int indexRightSibling = -1;
+
+
+    // traverse until the leaf node is reached
+    while (!tempPointer->leaf) {
+        bool foundLess = false;
+        parentTempPointer = tempPointer;
+        for (int index = 0; index < tempPointer->size; index++) {
+            // if the value is less than the current key then go to the left
+            if (value < tempPointer->keys[index]) {
+                foundLess = true;
+                indexLeftSibling = index - 1;
+                indexRightSibling = index + 1;
+                tempPointer = tempPointer->children[index];
+                break;
+            }
+        }
+        if (foundLess) continue;
+        // if index is the last index then go to the right
+        indexLeftSibling = tempPointer->size - 1;
+        indexRightSibling = tempPointer->size + 1;
+        tempPointer = tempPointer->children[tempPointer->size];
+    }
+
+    // check if the value is present in the leaf node
+    bool found = false;
+    int indexValue = -1;
+    for (int index = 0; index < tempPointer->size; index++) {
+        if (tempPointer->keys[index] == value) {
+            indexValue = index;
+            found = true;
+            break;
+        }
+    }
+
+    // if the value is not present in the leaf node
+    if (!found) {
+        std::cout << "Value not found" << std::endl;
+        return;
+    }
+
+    // shift to remove the value
+    for (int index = indexValue; index < tempPointer->size - 1; index++) {
+        tempPointer->keys[index] = tempPointer->keys[index + 1];
+    }
+
+    // fix location of last child
+    tempPointer->children[tempPointer->size - 1] = tempPointer->children[tempPointer->size];
+    tempPointer->children[tempPointer->size] = nullptr;
+
+    // remove the last key (if exists)
+    tempPointer->keys[tempPointer->size - 1] = 0;
+    tempPointer->size--;
+
+    // i3 the leaf node is root then remove its children
+    if (tempPointer == root) {
+        for (auto &index: tempPointer->children) {
+            index = nullptr;
+        }
+        if (tempPointer->size == 0) {
+            root = nullptr;
+            return;
+        }
+        return;
+    }
+
+    // more than min keys then we are done (after remove)
+    // TODO
+    if (tempPointer->size >= (ORDER + 1) / 2) {
+        int indexCurrentNode = 0;
+        if (indexLeftSibling < 0)
+            indexCurrentNode = indexRightSibling - 1;
+        else
+            indexCurrentNode = indexLeftSibling;
+
+        if (parentTempPointer->keys[indexCurrentNode] == value)
+            parentTempPointer->keys[indexCurrentNode] = tempPointer->keys[0];
+
+        return;
+    }
+
+    // first check if some sibling can be borrowed from
+    // first left then right
+
+    // if there is left sibling
+    if (indexLeftSibling >= 0) {
+        auto leftSibling = parentTempPointer->children[indexLeftSibling];
+        // if left sibling has 1 or more than min keys then we are done
+        if (leftSibling->size >= (ORDER + 1) / 2 + 1) {
+            // shift to borrow from left sibling
+            for (int index = tempPointer->size; index > 0; index--) {
+                tempPointer->keys[index] = tempPointer->keys[index - 1];
+            }
+            tempPointer->size++;
+            // pass the child
+            tempPointer->children[tempPointer->size] = tempPointer->children[tempPointer->size - 1];
+            tempPointer->children[tempPointer->size - 1] = nullptr;
+            // pass the key (borrowed) - max key from left sibling
+            tempPointer->keys[0] = leftSibling->keys[leftSibling->size - 1];
+            // remove the key from left sibling
+            leftSibling->size--;
+            // update children of left sibling
+            leftSibling->children[leftSibling->size] = tempPointer;
+            leftSibling->children[leftSibling->size + 1] = nullptr;
+            // update the parent
+            parentTempPointer->keys[indexLeftSibling] = tempPointer->keys[0];
+            return;
+        }
+    }
+
+    // if there is right sibling
+    if (indexRightSibling < parentTempPointer->size + 1) {
+        auto rightSibling = parentTempPointer->children[indexRightSibling];
+        // if right sibling has 1 or more than min keys then we are done
+        if (rightSibling->size >= (ORDER + 1) / 2 + 1) {
+            tempPointer->size++;
+            // assign the key of the right sibling to the leaf node - min key from right sibling
+            tempPointer->keys[tempPointer->size - 1] = rightSibling->keys[0];
+            // pass the child
+            tempPointer->children[tempPointer->size] = tempPointer->children[tempPointer->size - 1];
+            tempPointer->children[tempPointer->size - 1] = nullptr;
+            // remove from right sibling
+            rightSibling->size--;
+            rightSibling->children[rightSibling->size] = rightSibling->children[rightSibling->size + 1];
+            rightSibling->children[rightSibling->size + 1] = nullptr;
+
+            // update the parent
+            for (int index = 0; index < rightSibling->size; index++) {
+                rightSibling->keys[index] = rightSibling->keys[index + 1];
+            }
+
+            parentTempPointer->keys[indexRightSibling - 1] = rightSibling->keys[0];
+            parentTempPointer->keys[indexRightSibling - 2] = tempPointer->keys[0];
+            return;
+        }
+    }
+
+    // if there is no sibling that can be borrowed from
+    // then we need to merge with some sibling
+
+    // check if there is left sibling
+    if (indexLeftSibling >= 0) {
+        // keep elements in left sibling
+        auto leftSibling = parentTempPointer->children[indexLeftSibling];
+
+        // merge with left sibling
+        for (int index = 0; index < tempPointer->size; index++) {
+            leftSibling->keys[leftSibling->size + index] = tempPointer->keys[index];
+        }
+        // update children
+        leftSibling->children[leftSibling->size] = nullptr;
+        leftSibling->children[leftSibling->size + tempPointer->size] = tempPointer->children[tempPointer->size];
+        // update size
+        leftSibling->size += tempPointer->size;
+        // remove from internal node
+        removeFromInternalNode(parentTempPointer, leftSibling, parentTempPointer->keys[indexLeftSibling]);
+        delete tempPointer;
+        return;
+    }
+
+    // check if there is right sibling
+    if (indexRightSibling < parentTempPointer->size + 1) {
+        // keep elements tempPointer
+        auto rightSibling = parentTempPointer->children[indexRightSibling];
+
+        for (int index = 0; index < rightSibling->size; index++) {
+            tempPointer->keys[tempPointer->size + index] = rightSibling->keys[index];
+        }
+        // update children
+        tempPointer->children[tempPointer->size] = nullptr;
+        tempPointer->children[tempPointer->size + rightSibling->size] = rightSibling->children[rightSibling->size];
+        // update size
+        tempPointer->size += rightSibling->size;
+        // remove from internal node
+        removeFromInternalNode(parentTempPointer, tempPointer, parentTempPointer->keys[indexRightSibling - 1]);
+        delete rightSibling;
+        return;
+    }
+}
+
+void BplusTree::removeFromInternalNode(Node *parentNode, Node *tempNode, int key) {
+    if (parentNode == root && parentNode->size == 1) {
+        if (parentNode->children[0] == tempNode) {
+            root = parentNode->children[0];
+            return;
+        } else if (parentNode->children[1] == tempNode) {
+            root = parentNode->children[1];
+            return;
+        }
+    }
+    int indexValue = 0;
+    for (int index = 0; index < parentNode->size; index++) {
+        if (parentNode->keys[index] == key) {
+            indexValue = index;
+            break;
+        }
+    }
+
+    for (int index = indexValue; index < parentNode->size; index++) {
+        parentNode->keys[index] = parentNode->keys[index + 1];
+    }
+
+    for (indexValue = 0; indexValue < parentNode->size + 1; indexValue++) {
+        if (parentNode->children[indexValue] == tempNode) {
+            break;
+        }
+    }
+
+    // TODO i = indexValue -> i=indexValue+1
+    for (int i = indexValue + 1; i < parentNode->size + 1; i++) {
+        parentNode->children[i] = parentNode->children[i + 1];
+    }
+
+    parentNode->size--;
+    // if the node has one remaining key (or more)
+    if (parentNode->size >= (ORDER + 1) / 2 - 1)
+        return;
+    if (parentNode == root)
+        return;
+
+    Node *parent = findParent(root, parentNode);
+    int indexLeftSibling = 0;
+    int indexRightSibling = 0;
+
+    for (indexValue = 0; indexValue < parent->size + 1; indexValue++) {
+        if (parent->children[indexValue] == parentNode) {
+            indexLeftSibling = indexValue - 1;
+            indexRightSibling = indexValue + 1;
+            break;
+        }
+    }
+    // if there is left sibling
+    if (indexLeftSibling >= 0) {
+        auto leftSibling = parent->children[indexLeftSibling];
+        if (leftSibling->size >= (ORDER + 1) / 2) {
+            for (int index = parentNode->size; index > 0; index--) {
+                parentNode->keys[index] = parentNode->keys[index - 1];
+            }
+            parentNode->keys[0] = parent->keys[indexLeftSibling];
+            parent->keys[indexLeftSibling] = leftSibling->keys[leftSibling->size - 1];
+            for (int index = parentNode->size + 1; index > 0; index--) {
+                parentNode->children[index] = parentNode->children[index - 1];
+            }
+            parentNode->children[0] = leftSibling->children[leftSibling->size];
+            parentNode->size++;
+            leftSibling->size--;
+            return;
+        }
+    }
+
+    // if there is right sibling
+    if (indexRightSibling <= parent->size) {
+        auto rightSibling = parent->children[indexRightSibling];
+        if (rightSibling->size >= (ORDER + 1) / 2) {
+            parentNode->keys[parentNode->size] = parent->keys[indexValue];
+            parent->keys[indexValue] = rightSibling->keys[0];
+            for (int index = 0; index < rightSibling->size - 1; index++) {
+                rightSibling->keys[index] = rightSibling->keys[index + 1];
+            }
+            parentNode->children[parentNode->size + 1] = rightSibling->children[0];
+            for (int index = 0; index < rightSibling->size; ++index) {
+                rightSibling->children[index] = rightSibling->children[index + 1];
+            }
+            parentNode->size++;
+            rightSibling->size--;
+            return;
+        }
+    }
+    // if it can not be borrowed
+    if (indexLeftSibling >= 0) {
+        auto leftSibling = parent->children[indexLeftSibling];
+        leftSibling->keys[leftSibling->size] = parent->keys[indexLeftSibling];
+        for (int index = leftSibling->size + 1, j = 0; j < parentNode->size; j++) {
+            leftSibling->keys[index] = parentNode->keys[j];
+        }
+        for (int index = leftSibling->size + 1, j = 0; j < parentNode->size + 1; j++) {
+            leftSibling->children[index] = parentNode->children[j];
+            parentNode->children[j] = nullptr;
+        }
+        leftSibling->size += parentNode->size + 1;
+        parentNode->size = 0;
+        removeFromInternalNode(parent, parentNode, parent->keys[indexLeftSibling]);
+    } else if (indexRightSibling <= parent->size) {
+        auto rightSibling = parent->children[indexRightSibling];
+        parentNode->keys[parentNode->size] = parent->keys[indexRightSibling - 1];
+        for (int index = parentNode->size + 1, j = 0; j < rightSibling->size; j++) {
+            parentNode->keys[index] = rightSibling->keys[j];
+        }
+        for (int index = parentNode->size + 1, j = 0; j < rightSibling->size + 1; j++) {
+            parentNode->children[index] = rightSibling->children[j];
+            rightSibling->children[j] = nullptr;
+        }
+        parentNode->size += rightSibling->size + 1;
+        rightSibling->size = 0;
+        removeFromInternalNode(parent, rightSibling, parent->keys[indexRightSibling - 1]);
+    }
 }

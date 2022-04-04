@@ -29,7 +29,7 @@ void test() {
         std::chrono::steady_clock::time_point begin =
                 std::chrono::steady_clock::now();
         for (int i = 0; i < 1000000; ++i) {
-            tree->insertar(datos[i]);
+            tree->insert(datos[i]);
         }
         std::chrono::steady_clock::time_point end =
                 std::chrono::steady_clock::now();
